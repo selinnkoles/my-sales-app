@@ -17,14 +17,23 @@ modules:
     parameters:
       instances: 1
       buildpack: nodejs_buildpack
+      memory: 256M
     build-parameters:
       builder: npm-ci
     provides:
-      - name: srv-api # required by consumers of CAP services (e.g. approuter)
+      - name: srv-api
         properties:
           srv-url: ${default-url}
-    requires:
-      []
+    requires: []
 
-resources:
-  []
+  - name: my-sales-app-ui
+    type: html5
+    path: app/mysalesapp
+    build-parameters:
+      build-result: dist
+      builder: custom
+      commands:
+        - npm install
+        - npm run build
+      supported-platforms: []
+resources: []
