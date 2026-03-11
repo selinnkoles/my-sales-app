@@ -1,0 +1,7 @@
+{
+  "xsappname": "my-sales-app",
+  "tenant-mode": "dedicated",
+  "scopes": [],
+  "role-templates": [],
+  "role-collections": []
+}

@@ -10,6 +10,7 @@ build-parameters:
       commands:
         - npm ci
         - npx cds build --production
+
 modules:
   - name: my-sales-app-srv
     type: nodejs
@@ -24,7 +25,8 @@ modules:
       - name: srv-api
         properties:
           srv-url: ${default-url}
-    requires: []
+    requires:
+      - name: my-sales-app-auth
 
   - name: my-sales-app-ui
     type: html5
@@ -36,4 +38,84 @@ modules:
         - npm install
         - npm run build
       supported-platforms: []
-resources: []
+
+  - name: my-sales-app-deployer
+    type: com.sap.application.content
+    path: .
+    requires:
+      - name: my-sales-app-html5-repo-host
+        parameters:
+          content-target: true
+    build-parameters:
+      build-result: resources
+      requires:
+        - name: my-sales-app-ui
+          artifacts:
+            - dist/*.zip
+          target-path: resources/
+
+  - name: my-sales-app-destination-content
+    type: com.sap.application.content
+    requires:
+      - name: my-sales-app-destination
+        parameters:
+          content-target: true
+      - name: my-sales-app-html5-repo-host
+        parameters:
+          service-key:
+            name: my-sales-app-html5-repo-host-key
+      - name: my-sales-app-auth
+        parameters:
+          service-key:
+            name: my-sales-app-auth-key
+    parameters:
+      content:
+        instance:
+          destinations:
+            - Name: my_sales_app_html5_repo_host
+              ServiceInstanceName: my-sales-app-html5-repo-host
+              ServiceKeyName: my-sales-app-html5-repo-host-key
+              sap.cloud.service: mdp.mysalesapp
+            - Name: my_sales_app_auth
+              Authentication: OAuth2UserTokenExchange
+              ServiceInstanceName: my-sales-app-auth
+              ServiceKeyName: my-sales-app-auth-key
+              sap.cloud.service: mdp.mysalesapp
+          existing_destinations_policy: update
+    build-parameters:
+      no-source: true
+
+resources:
+  - name: my-sales-app-auth
+    type: org.cloudfoundry.managed-service
+    parameters:
+      service: xsuaa
+      service-plan: application
+      path: ./xs-security.json
+
+  - name: my-sales-app-html5-repo-host
+    type: org.cloudfoundry.managed-service
+    parameters:
+      service: html5-apps-repo
+      service-plan: app-host
+
+  - name: my-sales-app-destination
+    type: org.cloudfoundry.managed-service
+    parameters:
+      service: destination
+      service-plan: lite
+      config:
+        HTML5Runtime_enabled: true
+        init_data:
+          instance:
+            destinations:
+              - Name: my-sales-app-srv-api
+                URL: ~{srv-api/srv-url}
+                Authentication: NoAuthentication
+                Type: HTTP
+                ProxyType: Internet
+                HTML5.ForwardAuthToken: true
+                HTML5.DynamicDestination: true
+            existing_destinations_policy: update
+    requires:
+      - name: srv-api
