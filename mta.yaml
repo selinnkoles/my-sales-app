@@ -10,7 +10,6 @@ build-parameters:
       commands:
         - npm ci
         - npx cds build --production
-
 modules:
   - name: my-sales-app-srv
     type: nodejs
@@ -27,7 +26,6 @@ modules:
           srv-url: ${default-url}
     requires:
       - name: my-sales-app-auth
-
   - name: my-sales-app-ui
     type: html5
     path: app/mysalesapp
@@ -36,9 +34,9 @@ modules:
       builder: custom
       commands:
         - npm install
-        - npm run build
-      supported-platforms: []
-
+        - npx ui5 build --clean-dest
+      supported-platforms:
+        []
   - name: my-sales-app-deployer
     type: com.sap.application.content
     path: .
@@ -51,9 +49,8 @@ modules:
       requires:
         - name: my-sales-app-ui
           artifacts:
-            - dist/*.zip
+            - mdpmysalesapp.zip
           target-path: resources/
-
   - name: my-sales-app-destination-content
     type: com.sap.application.content
     requires:
@@ -84,7 +81,6 @@ modules:
           existing_destinations_policy: update
     build-parameters:
       no-source: true
-
 resources:
   - name: my-sales-app-auth
     type: org.cloudfoundry.managed-service
@@ -92,13 +88,18 @@ resources:
       service: xsuaa
       service-plan: application
       path: ./xs-security.json
-
+      config:
+        xsappname: my-sales-app-${org}-${space}
+        tenant-mode: dedicated
+        oauth2-configuration:
+          credential-types:
+            - "binding-secret"
+            - "x509"
   - name: my-sales-app-html5-repo-host
     type: org.cloudfoundry.managed-service
     parameters:
       service: html5-apps-repo
       service-plan: app-host
-
   - name: my-sales-app-destination
     type: org.cloudfoundry.managed-service
     parameters:
